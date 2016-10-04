@@ -1,5 +1,3 @@
-# hello-world
+# big data analysis
 
-yoy yo yoy yo yyo yoy yo whats up yooo...
-hey yo mr. white....
-its me yo...jessi...jessi pinkman!!
+this repository contains files to learn excel,python,sas,r and hive. 
