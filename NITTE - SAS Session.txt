@@ -1,0 +1,183 @@
+
+/* Creating a dataset */
+data x; /*To create a dataset named 'X'*/
+format item $50. price dollar20. recipient $20.;/*To specify how data is to be displayed*/
+input order item $ price days_till_del recipient $;/*To create the variables and the associated data types*/
+datalines;/*Command used to insert rows of data*/
+1 Logitech_Mouse 5 3 Sayan_Sen
+2 Macbook 1400 7 Vivek_K
+3 Harry_potter7 7.99 2 Gaurav_Ray
+4 How_to_use_sas 3.15 5 Saptashi_Das
+5 Fundamentals_R 2.45 3 Mainak_B
+6 Pinstripe_skirt 19 2 Neha_Sharma
+;
+run;/*Essential command to be put at the end of every code to help SAS identify where to stop*/
+
+data x1;
+format due_dt date9.;
+set x;/*Command to specify the input dataset on which the code and its procedures are to be implemented*/
+due_dt=today()+days_till_del;/*Creating a variable*/
+if days_till_del<=2 then days_till_del=.;
+due_dt1=today()+days_till_del;/*Since the previous line converted some values to NULL(.), this sum will also show up as NULL for those instances*/ 
+due_dt2=sum(today(),days_till_del);/*The SUM function converts the NULL values to 0 for the summation and gives a result*/
+run;
+
+data multi_if;
+set x1;
+if days_till_del<=5 then do;/*The DO loop here is used with IF-THEN for multiple steps to be carried out for such conditional programming*/
+priority=1;
+flag="Immediate";
+end;
+else do;
+priority=2;
+flag="Delayed";
+end;
+run;
+
+data x2;
+format chk date9.;
+set x1 (drop=due_dt1);/*The DROP function is used to remove the column. This can be used in the "data x2;" line as well, however the processing and PDV will change. Read up on KEEP as well which works in a similar manner*/
+chk=today();
+yr=year(due_dt);/*The YEAR function gives back the year of the date. Read up on other such functions involving dates, find out how many are there and what do they do.*/
+mth=month(due_dt);
+run;
+
+proc sort data=x2; by order; run;/*PROC SORT is a process inbuilt into SAS, used to sort the data based on the specified field(s)*/
+ 
+
+proc freq data=x2;/*Used to give the no. of instances occurring in the data for the different values of the specified variable in the next line by using "tables"*/
+tables due_dt/list missing;/*"list missing" is used to include even missing/blank values in due_dt, in the final nos. to be displyed. Read up on what are the other options you can put in here*/
+run;
+
+proc rank data=x2 ties=mean out=x3 descending;/*Used for ranking the data. "ties" is used for tied cases and "descending" indicates how ranking should be done on price*/ 
+var price;
+ranks rnk;/*The variable in which the ranks will be stored*/
+run;
+
+data one_row;
+set x3;
+if _n_=5;/*_n_ is created in the PDV and is an auto-generated index in the backend. This is used to get the n-th row in the data*/
+run;
+
+/* The rest of the code contains some more basic functions. I have left them without any comments since I would like*/
+/* you to run these codes and let us know what you understand on whats happening with the data at each step.*/
+/* Feel free to reach out in case of any doubts or queries.*/
+
+/****************************************Assignment - Work in 3 groups amongst yourselves**************************/
+
+data text_ops;
+set x3;
+L=LENGTH(recipient);
+J = item||recipient;
+J1 = item||" "||recipient;
+J2 = item||"@1234@"||recipient;
+Z = item||" - "||price;
+X = COMPRESS(Z);
+C = item||STRIP(due_dt);
+X1 = COMPBL(Z);
+N=COMPRESS(J2,"@Aa");
+
+S=SUBSTR(recipient,1,4);
+S1=SUBSTR(recipient,3,3);
+T = SCAN(J2,1,"@");
+T1 = SCAN(J2,2,"@");
+T2 = SCAN(J2,3,"@");
+I = T1*1;
+K = STRIP(I||"");
+U = UPCASE(recipient);
+D=LOWCASE(recipient);
+B = INDEX(UPCASE(recipient),"A");
+RUN;
+
+data y;
+format item $50. price dollar20. recipient $20.;
+input order item $ price days_till_del recipient $;
+datalines;
+1 Sennheiser_earph 15 3 Sayan_Sen
+2 Macbook 1400 7 Vivek_K
+;
+run;
+
+data xy;
+set x y;
+run;
+
+proc sort data=xy out= xy1 nodupkey dupout=dups; by order; run; 
+
+proc sort data=xy; by order descending price; run; 
+
+proc sort data=xy out= xy2 nodupkey dupout=dups; by order; run; 
+proc sort data=xy out= xy3 noduprec dupout=dups; by order; run; 
+
+PROC PRINT DATA = xy3(OBS = 6);RUN;
+
+PROC PRINT DATA = xy3(FIRSTOBS = 2);RUN;
+
+PROC PRINT DATA = xy3;
+VAR item days_till_del price;WHERE index(recipient,"Sayan")>0;
+RUN;
+
+proc sort data=x3; by rnk; run;
+
+data run_total;
+format total dollar20.;
+set x3;
+total+price;
+run;
+
+proc sort data=x3; by due_dt; run;
+
+data run_total_grp;
+format total dollar20.;
+set x3;
+by due_dt;
+if first.due_dt then total=price;
+else total+price;
+run;
+
+proc sql;
+create table aggr1 as
+select recipient, sum(price) as price format dollar20. from xy3 group by 1;
+quit;
+
+proc sql;
+create table aggr2 as
+select days_till_del, sum(price) as price format dollar20. from xy3 group by 1;
+quit;
+
+data addr;
+format city $20. recipient $20.;
+input recipient $ city $;
+datalines;
+Sayan_Sen Bangalore
+Vivek_K Chennai
+Saptashi_Das Vienna
+Mainak_B Mumbai
+Neha_Sharma Delhi
+Mradul_Sharma Atlanta
+Abhishek_K NYC
+Suvarup_S Boulder
+;
+run;
+
+proc sort data=xy3; by recipient; run;
+proc sort data=addr; by recipient; run;
+
+data final_details ex_common ex_l_outer ex_r_outer;
+merge xy3(in=a) addr(in=b);
+by recipient;
+if a then output final_details;
+if a and b then output ex_common;
+if a and not b then output ex_l_outer;
+if b and not a then output ex_r_outer;
+run;
+
+proc sql;
+create table final_sql_details as
+select a.*,b.city from
+xy3 a
+left join
+addr b
+on
+a.recipient=b.recipient;
+quit;
