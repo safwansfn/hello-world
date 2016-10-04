@@ -1,2 +1,5 @@
 # hello-world
-first repository
+
+yoy yo yoy yo yyo yoy yo whats up yooo...
+hey yo mr. white....
+its me yo...jessi...jessi pinkman!!
